@@ -27,4 +27,25 @@ Route.get("/", async () => {
 Route.group(() => {
   Route.post("/register", "AuthController.register").as("auth.register");
   Route.post("/login", "AuthController.login").as("auth.login");
+  Route.post("/register/students", "AuthController.registerStudent").as(
+    "auth.register.students"
+  );
+  Route.post("/login/students", "AuthController.loginStudent").as(
+    "auth.login.students"
+  );
 }).prefix("auth");
+
+Route.group(() => {
+  Route.get("/", "BatchesController.getAllBatches").as("batches.all");
+  Route.post("/", "BatchesController.createBatch")
+    .middleware(["auth"])
+    .as("batches.create");
+}).prefix("batches");
+
+Route.group(() => {
+  Route.get("/students", "UsersController.getAllStudents").as(
+    "users.all.students"
+  );
+})
+  .prefix("users")
+  .middleware("auth");

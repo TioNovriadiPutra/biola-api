@@ -3,6 +3,7 @@ import { Role } from "App/Enums/Role";
 import Profile from "App/Models/Profile";
 import User from "App/Models/User";
 import LoginValidator from "App/Validators/LoginValidator";
+import RegisterStudentValidator from "App/Validators/RegisterStudentValidator";
 import RegisterValidator from "App/Validators/RegisterValidator";
 
 export default class AuthController {
@@ -58,6 +59,57 @@ export default class AuthController {
         });
       } else if (error === "Account not authorized!") {
         return response.forbidden({ message: error });
+      }
+    }
+  }
+
+  public async registerStudent({ request, response }: HttpContextContract) {
+    try {
+      const data = await request.validate(RegisterStudentValidator);
+
+      const newUser = new User();
+      newUser.email = data.email;
+      newUser.password = data.password;
+      newUser.roleId = Role.USER;
+
+      const newProfile = new Profile();
+      newProfile.fullName = data.fullName;
+      newProfile.batchId = data.batchId;
+
+      await newUser.related("profile").save(newProfile);
+
+      return response.created({ message: "Registration success!" });
+    } catch (error) {
+      if (error.messages) {
+        return response.badRequest(error.messages.errors);
+      } else {
+        console.log(error);
+      }
+    }
+  }
+
+  public async loginStudent({ request, response, auth }: HttpContextContract) {
+    try {
+      const data = await request.validate(LoginValidator);
+
+      const token = await auth.use("api").attempt(data.email, data.password, {
+        expiresIn: "30 minute",
+      });
+
+      return response.ok({
+        message: "Login success!",
+        token: token.token,
+        userId: token.user.id,
+      });
+    } catch (error) {
+      if (error.messages) {
+        return response.badRequest({
+          message: "Email and Password must be filled!",
+        });
+      } else if (error.responseText) {
+        return response.unauthorized({
+          message: "Email or Password incorrect!",
+        });
       }
     }
   }
